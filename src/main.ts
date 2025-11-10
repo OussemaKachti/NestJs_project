@@ -1,12 +1,20 @@
-// importer NestFactory
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-// importer AppModule
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+
 async function bootstrap() {
-// on va créer une nouvelle application Nest à partir de notre module «AppModule »
-const app = await NestFactory.create(AppModule);
-// on va choisir le port sur lequel notre application va être lancée
-await app.listen(3000);
+  const app = await NestFactory.create(AppModule);
+  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, 
+      forbidNonWhitelisted: true, 
+      transform: true, 
+    }),
+  );
+  
+  await app.listen(3000);
+  console.log('Application is running on: http://localhost:3000');
 }
-// on va exécuter notre fonction
 bootstrap();
