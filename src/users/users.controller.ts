@@ -1,93 +1,72 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, Headers } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-
-// Tableau en mémoire pour stocker les utilisateurs
-let users = [
-  { id: 1, username: 'Mohamed', email: 'mohamed@esprit.tn', status: 'active' },
-  { id: 2, username: 'Sarra', email: 'sarra@esprit.tn', status: 'inactive' },
-  { id: 3, username: 'Ali', email: 'ali@esprit.tn', status: 'inactive' },
-  { id: 4, username: 'Eya', email: 'eya@esprit.tn', status: 'active' },
-];
+import { Controller, Get, Post, Put, Patch, Delete, Param, Body, Logger } from '@nestjs/common';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  @Get()
-  getAllUsers(@Query('status') status?: string) {
-    if (status) {
-      return users.filter(user => user.status === status);
-    }
-    return users;
-  }
+  private readonly logger = new Logger(UsersController.name);
 
-  @Get('active/:status')
-  getUsersByStatus(@Param('status') status: string) {
-    return users.filter(user => user.status === status);
-  }
+  constructor(private readonly usersService: UsersService) {}
 
-  @Get(':id')
-  getUserById(@Param('id') id: string) {
-    const userId = parseInt(id, 10);
-    const user = users.find(u => u.id === userId);
-    if (!user) {
-      return { message: 'User not found' };
-    }
-    return user;
-  }
-
+  // 1. POST /users - Créer un utilisateur
   @Post()
-  createUser(@Body() createUserDto: CreateUserDto, @Headers('authorization') auth?: string) {
-    const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    const newUser = {
-      id: newId,
-      username: createUserDto.username,
-      email: createUserDto.email,
-      status: createUserDto.status || 'inactive',
-    };
-    users.push(newUser);
-    return {
-      message: 'User created successfully',
-      user: newUser,
-      authorization: auth || 'No authorization header provided',
-    };
+  async create(@Body() data: { email: string; password: string }) {
+    this.logger.log(`POST /users - Creating user with email: ${data.email}`);
+    return this.usersService.create(data.email, data.password);
   }
 
-  @Put(':id')
-  updateUser(@Param('id') id: string, @Body() updateUserDto: CreateUserDto) {
-    const userId = parseInt(id, 10);
-    const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) {
-      return { message: 'User not found' };
-    }
-
-    users[userIndex] = {
-      ...users[userIndex],
-      username: updateUserDto.username,
-      email: updateUserDto.email,
-      status: updateUserDto.status || users[userIndex].status,
-      id: userId, // Garder l'id original
-    };
-
-    return {
-      message: 'User updated successfully',
-      user: users[userIndex],
-    };
+  // 2. PUT /users/activate - Activer un utilisateur
+  @Put('activate')
+  async activate(@Body() data: { id: string; password: string }) {
+    this.logger.log(`PUT /users/activate - Activating user ID: ${data.id}`);
+    return this.usersService.activate(data.id, data.password);
   }
 
+  // Alternative: POST /users/:id/activate
+  @Post(':id/activate')
+  async activateById(@Param('id') id: string, @Body('password') password: string) {
+    this.logger.log(`POST /users/${id}/activate - Activating user`);
+    return this.usersService.activate(id, password);
+  }
+
+  // Récupérer tous les utilisateurs
+  @Get()
+  findAll() {
+    this.logger.log('GET /users - Fetching all users');
+    return this.usersService.findAll();
+  }
+
+  // 5. GET /users/active - Récupérer les utilisateurs actifs
+  @Get('active')
+  findActive() {
+    this.logger.log('GET /users/active - Fetching active users');
+    return this.usersService.findActive();
+  }
+
+  // 4. GET /users/email/:email - Obtenir un utilisateur par email
+  @Get('email/:email')
+  findOneByEmail(@Param('email') email: string) {
+    this.logger.log(`GET /users/email/${email} - Fetching user by email`);
+    return this.usersService.findOneByEmail(email);
+  }
+
+  // 3. GET /users/:id - Obtenir un utilisateur par ID
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    this.logger.log(`GET /users/${id} - Fetching user by ID`);
+    return this.usersService.findOneById(id);
+  }
+
+  // Mettre à jour un utilisateur
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() data: any) {
+    this.logger.log(`PATCH /users/${id} - Updating user`);
+    return this.usersService.update(id, data);
+  }
+
+  // Supprimer un utilisateur
   @Delete(':id')
-  deleteUser(@Param('id') id: string) {
-    const userId = parseInt(id, 10);
-    const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) {
-      return { message: 'User not found' };
-    }
-
-    const deletedUser = users.splice(userIndex, 1)[0];
-    return {
-      message: 'User deleted successfully',
-      user: deletedUser,
-    };
+  remove(@Param('id') id: string) {
+    this.logger.log(`DELETE /users/${id} - Removing user`);
+    return this.usersService.remove(id);
   }
 }
-
