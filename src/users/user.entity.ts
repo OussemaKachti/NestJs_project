@@ -1,4 +1,4 @@
-import { Entity, ObjectIdColumn, Column, ObjectId, BeforeInsert, AfterInsert, AfterUpdate, BeforeRemove, AfterLoad } from 'typeorm';
+import { Entity, ObjectIdColumn, Column, ObjectId, BeforeInsert, AfterInsert, AfterUpdate, BeforeRemove, AfterLoad, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Logger } from '@nestjs/common';
 
 @Entity('users')
@@ -10,10 +10,19 @@ export class User {
   email: string;
 
   @Column()
+  role: string; // 'admin' ou 'client'
+
+  @Column({ nullable: true })
   password: string;
 
   @Column({ default: false })
   active: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   // Logger privé pour cette entité
   private readonly logger = new Logger(User.name);
